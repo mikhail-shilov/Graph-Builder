@@ -19,7 +19,10 @@ class GraphBuilder {
                 ];
           */
 
-        this.dotSet = [{"x": 0, "y": 140}, {"x": 90, "y": 140}, {"x": 90, "y": 140}, {"x": 300, "y": 140}];
+        this.dotSet = [{"x": 0, "y": 140}, {"x": 90, "y": 140}, {"x": 90, "y": 140}, {
+            "x": this.graphAreaLengthByX,
+            "y": 140
+        }];
 
 
     }
@@ -35,19 +38,20 @@ class GraphBuilder {
 
     drawPath(dots) {
         let path;
-        if (dots) {
-            path = dots
-        } else {
-            path = this.dotSet
-        }
+        (dots) ? path = dots : path = this.dotSet;
 
-        this.display.clearRect(31, 0, 400, 269);
+
+        this.display.clearRect(this.graphAreaBegin.x - 1,
+            this.graphAreaBegin.y - this.graphAreaLengthByY - 1,
+            this.graphAreaLengthByX + 4,
+            this.graphAreaLengthByY + 2);
 
         path.forEach((item, i) => {
             if (i === 0) {
                 this.display.beginPath();
                 this.display.moveTo(this.graphAreaBegin.x + item.x, this.graphAreaBegin.y - item.y);
             } else {
+                if (i === path.length - 1) item.x = this.graphAreaLengthByX; //для сброса погрешности на округлениях
                 this.display.lineTo(this.graphAreaBegin.x + item.x, this.graphAreaBegin.y - item.y);
             }
         });
@@ -62,7 +66,6 @@ class GraphBuilder {
         for (let i = 0; i < dotCount; i++) {
             dots.push({'x': augment * i, 'y': this.getRandom(0, this.graphAreaLengthByY)});
         }
-        console.log('dots');
         return dots;
     }
 
@@ -72,41 +75,40 @@ class GraphBuilder {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    drawAnimate() {
-        let arrayStart = this.dotSet;
-        console.log(arrayStart);
+    drawAnimate(callback) {
 
-        //let arrayFinish = [{"x": 0, "y": 40}, {"x": 90, "y": 210}, {"x": 180, "y": 230}, {"x": 300, "y": 40}]
+        let arrayStart = this.dotSet;
         let arrayFinish = this.generateDots(4);
-        console.log(arrayFinish);
         let start = null;
 
         const drawFrame = (timestamp) => {
             if (!start) start = timestamp;
-            if ((timestamp - start) <= this.animationTime) {
-                let arrayCurrent = [];
-                for (let i = 0; i < arrayStart.length; i++) {
-                    arrayCurrent.push({
-                        'x': this.positionCalculate(arrayStart[i].x, arrayFinish[i].x, this.animationTime, timestamp - start),
+            let progress = timestamp - start;
+            if (progress > this.animationTime) progress = this.animationTime;
 
-                        'y': this.positionCalculate(arrayStart[i].y, arrayFinish[i].y, this.animationTime, timestamp - start),
-                    })
+            let arrayCurrent = [];
+            for (let i = 0; i < arrayStart.length; i++) {
+                arrayCurrent.push({
+                    'x': this.positionCalculate(arrayStart[i].x, arrayFinish[i].x, this.animationTime, progress),
+                    'y': this.positionCalculate(arrayStart[i].y, arrayFinish[i].y, this.animationTime, progress),
+                });
+            }
+            this.drawPath(arrayCurrent);
 
-                }
-                this.drawPath(arrayCurrent);
-                if ((timestamp - start) < this.animationTime) window.requestAnimationFrame(drawFrame);
+            if ((timestamp - start) < this.animationTime) {
+                window.requestAnimationFrame(drawFrame);
+            } else {
+                callback();
             }
         }
+
         window.requestAnimationFrame(drawFrame);
         this.dotSet = arrayFinish;
 
     }
 
-
     positionCalculate(begin, end, duration, progress) {
-        let position = begin + Math.round(((end - begin) / duration) * progress);
-        if (position > 200) console.log((progress));
-        return position
+        return Math.round(begin + Math.round(((end - begin) / duration) * progress));
     }
 
 
@@ -205,15 +207,25 @@ class GraphBuilder {
 document.addEventListener('DOMContentLoaded', () => {
 
     const elArea = document.getElementById("canvas");
+
     const aniGraph = new GraphBuilder(elArea,);
     aniGraph.initField();
     aniGraph.drawPath();
     //aniGraph.drawAnimate();
 
+    const clickHandler = () => {
 
-    elArea.addEventListener('click', () => {
-        aniGraph.drawAnimate();
-    });
+
+        elArea.removeEventListener('click', clickHandler);
+        aniGraph.drawAnimate(() => {
+            elArea.addEventListener('click', clickHandler);
+        });
+
+
+    }
+
+
+    elArea.addEventListener('click', clickHandler);
 
 
 });
