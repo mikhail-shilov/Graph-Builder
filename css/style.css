@@ -1,0 +1,21 @@
+:root {
+  box-sizing: border-box; }
+
+*, ::before, ::after {
+  box-sizing: inherit;
+  padding: 0;
+  margin: 0; }
+
+h1 {
+  margin-bottom: 15px;
+}
+.container {
+  width: 1024px;
+  margin: 0  auto;
+  text-align: center;
+  padding: 120px 0;
+}
+
+#canvas {
+  border: #31708F solid 2px;
+}
