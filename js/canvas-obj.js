@@ -12,22 +12,15 @@ class GraphBuilder {
 
         this.animationTime = 300;
 
-        /*
-                this.dotSet = [
-                    {"x": 0, "y": Math.round((this.graphAreaBegin.y - this.graphAreaEnd.y) / 2)},
-                    {"x": this.graphAreaLengthByX, "y": Math.round((this.graphAreaBegin.y - this.graphAreaEnd.y) / 2)},
-                ];
-          */
-
-        this.dotSet = [{"x": 0, "y": 140}, {"x": 90, "y": 140}, {"x": 90, "y": 140}, {
-            "x": this.graphAreaLengthByX,
-            "y": 140
-        }];
-
-
+        this.dotSet = [
+            {"x": 0, "y": Math.round((this.graphAreaBegin.y - this.graphAreaEnd.y) / 2)},
+            {"x": this.graphAreaLengthByX, "y": Math.round((this.graphAreaBegin.y - this.graphAreaEnd.y) / 2)},
+        ];
     }
 
     initField() {
+        this.display.strokeStyle = "gray";
+
         this.display.clearRect(0, 0, this.displayWidth, this.displayHeight);
         this.display.beginPath();
         this.display.moveTo(this.displayPadding, this.displayPadding);
@@ -39,16 +32,19 @@ class GraphBuilder {
     drawPath(dots) {
         let path;
         (dots) ? path = dots : path = this.dotSet;
+        this.display.clearRect(this.graphAreaBegin.x - 5,
+            this.graphAreaBegin.y - this.graphAreaLengthByY - 5,
+            this.graphAreaLengthByX + 10,
+            this.graphAreaLengthByY + 10);
 
 
-        this.display.clearRect(this.graphAreaBegin.x - 1,
-            this.graphAreaBegin.y - this.graphAreaLengthByY - 1,
-            this.graphAreaLengthByX + 4,
-            this.graphAreaLengthByY + 2);
+
+        this.display.beginPath();
+        this.display.fillStyle = "white";
+        this.display.strokeStyle = "black";
 
         path.forEach((item, i) => {
             if (i === 0) {
-                this.display.beginPath();
                 this.display.moveTo(this.graphAreaBegin.x + item.x, this.graphAreaBegin.y - item.y);
             } else {
                 if (i === path.length - 1) item.x = this.graphAreaLengthByX; //для сброса погрешности на округлениях
@@ -56,10 +52,33 @@ class GraphBuilder {
             }
         });
         this.display.stroke();
+
+
+
+        this.display.beginPath();
+
+        path.forEach((item, i) => {
+            if (i === 0) {
+                this.display.moveTo(this.graphAreaBegin.x + item.x, this.graphAreaBegin.y - item.y);
+
+                this.display.arc(this.graphAreaBegin.x + item.x, this.graphAreaBegin.y - item.y, 4, 0, (Math.PI / 180) * 360, true)
+            } else {
+                this.display.moveTo(this.graphAreaBegin.x + item.x, this.graphAreaBegin.y - item.y);
+
+                if (i === path.length - 1) item.x = this.graphAreaLengthByX; //для сброса погрешности на округлениях
+                this.display.arc(this.graphAreaBegin.x + item.x, this.graphAreaBegin.y - item.y, 4, 0, (Math.PI / 180) * 360, true)
+            }
+        });
+        this.display.stroke();
+        this.display.fill();
+
+
+
     }
 
     generateDots(dotCount) {
         if (!dotCount) dotCount = this.getRandom(2, 10);
+        console.log(dotCount);
         const augment = Math.round(this.graphAreaLengthByX / (dotCount - 1));
         let dots = [];
 
@@ -76,16 +95,24 @@ class GraphBuilder {
     }
 
     drawAnimate(callback) {
-
         let arrayStart = this.dotSet;
-        let arrayFinish = this.generateDots(4);
-        let start = null;
+        let arrayFinish = this.generateDots();
+        this.dotSet = arrayFinish;
 
+        if (arrayStart.length !== arrayFinish.length) {
+            if (arrayStart.length > arrayFinish.length) {
+                arrayFinish = this.arrayNormalize(arrayStart, arrayFinish);
+            } else {
+                arrayStart = this.arrayNormalize(arrayStart, arrayFinish);
+            }
+        }
+
+
+        let start = null;
         const drawFrame = (timestamp) => {
             if (!start) start = timestamp;
             let progress = timestamp - start;
             if (progress > this.animationTime) progress = this.animationTime;
-
             let arrayCurrent = [];
             for (let i = 0; i < arrayStart.length; i++) {
                 arrayCurrent.push({
@@ -101,9 +128,7 @@ class GraphBuilder {
                 callback();
             }
         }
-
         window.requestAnimationFrame(drawFrame);
-        this.dotSet = arrayFinish;
 
     }
 
@@ -111,6 +136,34 @@ class GraphBuilder {
         return Math.round(begin + Math.round(((end - begin) / duration) * progress));
     }
 
+    arrayNormalize(arrayA, arrayB) {
+        let shortArray;
+        let longArray;
+
+        if (arrayA.length !== arrayB.length) {
+            if (arrayA.length > arrayB.length) {
+                shortArray = arrayB;
+                longArray = arrayA;
+            } else {
+                shortArray = arrayA;
+                longArray = arrayB;
+            }
+
+            let arrayFilled = longArray.map((itemOfBig) => {
+                let differences = shortArray.map((itemOfSmall) => {
+                    return Math.abs(itemOfSmall.x - itemOfBig.x);
+                })
+                return shortArray[differences.indexOf(Math.min(...differences))];
+            })
+
+            console.log(arrayFilled);
+            return arrayFilled;
+        } else {
+            console.log('Error: array length are equal...');
+        }
+
+
+    }
 
     /*
         drawLoop() {
