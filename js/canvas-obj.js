@@ -10,7 +10,7 @@ class GraphBuilder {
         this.graphAreaLengthByX = this.graphAreaEnd.x - this.graphAreaBegin.x;
         this.graphAreaLengthByY = this.graphAreaBegin.y - this.graphAreaEnd.y;
 
-        this.animationTime = 300;
+        this.animationTime = 700;
 
         this.dotSet = [
             {"x": 0, "y": Math.round((this.graphAreaBegin.y - this.graphAreaEnd.y) / 2)},
@@ -33,9 +33,9 @@ class GraphBuilder {
     drawPath(dots) {
         let path;
         (dots) ? path = dots : path = this.dotSet;
-        this.display.clearRect(this.graphAreaBegin.x - 8,
+        this.display.clearRect(this.graphAreaBegin.x - 10,
             this.graphAreaBegin.y - this.graphAreaLengthByY - 5,
-            this.graphAreaLengthByX + 16,
+            this.graphAreaLengthByX + 20,
             this.graphAreaLengthByY + 10);
         this.display.beginPath();
         this.display.fillStyle = "white";
@@ -86,11 +86,10 @@ class GraphBuilder {
     }
 
     //Генерация массива промежуточных координат для отрисовки анимации перехода
-    drawAnimate(callback) {
+    setupAnimate() {
         let arrayStart = this.dotSet;
         let arrayFinish = this.generateDots();
         this.dotSet = arrayFinish;
-
         if (arrayStart.length !== arrayFinish.length) {
             if (arrayStart.length > arrayFinish.length) {
                 arrayFinish = this.arrayNormalize(arrayStart, arrayFinish);
@@ -98,7 +97,6 @@ class GraphBuilder {
                 arrayStart = this.arrayNormalize(arrayStart, arrayFinish);
             }
         }
-
         let start = null;
         const drawFrame = (timestamp) => {
             if (!start) start = timestamp;
@@ -111,11 +109,19 @@ class GraphBuilder {
                     'y': this.positionCalculate(arrayStart[i].y, arrayFinish[i].y, this.animationTime, progress),
                 });
             }
+            this.dotSet = arrayCurrent.reduce((accumulator, item, index, array) => {
+                if (index < (array.length - 1)) {
+                    if (array[index].x !== array[index + 1].x) {
+                        accumulator.push(item);
+                    }
+                } else {
+                    accumulator.push(array[array.length-1]);
+                }
+                return accumulator;
+            }, []);
             this.drawPath(arrayCurrent);
             if ((timestamp - start) < this.animationTime) {
                 window.requestAnimationFrame(drawFrame);
-            } else {
-                if (callback) callback();
             }
         }
         window.requestAnimationFrame(drawFrame);
@@ -153,24 +159,12 @@ class GraphBuilder {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-
     const elArea = document.getElementById("canvas");
-
     const aniGraph = new GraphBuilder(elArea,);
     aniGraph.initField();
-    //aniGraph.drawPath();
-    aniGraph.drawAnimate();
-
-    //Удаляет обработчик клика с началом перестроения и устанавливает его обратно когда анимация завершается.
-    const clickHandler = () => {
-        elArea.removeEventListener('click', clickHandler);
-        aniGraph.drawAnimate(() => {
-            elArea.addEventListener('click', clickHandler);
-        });
-    }
-
-    elArea.addEventListener('click', clickHandler);
-
-
+    aniGraph.setupAnimate();
+    elArea.addEventListener('click', () => {
+        aniGraph.setupAnimate();
+    });
 });
 
