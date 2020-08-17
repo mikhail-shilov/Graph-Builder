@@ -140,13 +140,12 @@ class GraphBuilder {
                 shortArray = arrayA;
                 longArray = arrayB;
             }
-            let arrayFilled = longArray.map((itemOfBig) => {
+            return longArray.map((itemOfBig) => {
                 let differences = shortArray.map((itemOfSmall) => {
                     return Math.abs(itemOfSmall.x - itemOfBig.x);
                 })
                 return shortArray[differences.indexOf(Math.min(...differences))];
             })
-            return arrayFilled;
         } else {
             console.log('Error: array length are equal...');
         }
