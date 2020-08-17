@@ -18,9 +18,9 @@ class GraphBuilder {
         ];
     }
 
+    //Очистка поля и отрисовка осей координат
     initField() {
         this.display.strokeStyle = "gray";
-
         this.display.clearRect(0, 0, this.displayWidth, this.displayHeight);
         this.display.beginPath();
         this.display.moveTo(this.displayPadding, this.displayPadding);
@@ -29,20 +29,17 @@ class GraphBuilder {
         this.display.stroke();
     }
 
+    //Отрисовка графика на основе массива координат
     drawPath(dots) {
         let path;
         (dots) ? path = dots : path = this.dotSet;
-        this.display.clearRect(this.graphAreaBegin.x - 5,
+        this.display.clearRect(this.graphAreaBegin.x - 8,
             this.graphAreaBegin.y - this.graphAreaLengthByY - 5,
-            this.graphAreaLengthByX + 10,
+            this.graphAreaLengthByX + 16,
             this.graphAreaLengthByY + 10);
-
-
-
         this.display.beginPath();
         this.display.fillStyle = "white";
         this.display.strokeStyle = "black";
-
         path.forEach((item, i) => {
             if (i === 0) {
                 this.display.moveTo(this.graphAreaBegin.x + item.x, this.graphAreaBegin.y - item.y);
@@ -53,10 +50,7 @@ class GraphBuilder {
         });
         this.display.stroke();
 
-
-
         this.display.beginPath();
-
         path.forEach((item, i) => {
             if (i === 0) {
                 this.display.moveTo(this.graphAreaBegin.x + item.x, this.graphAreaBegin.y - item.y);
@@ -71,29 +65,27 @@ class GraphBuilder {
         });
         this.display.stroke();
         this.display.fill();
-
-
-
     }
 
+    //Генерация массива точек заданной или случайной длины (при отсутствии параметров)
     generateDots(dotCount) {
         if (!dotCount) dotCount = this.getRandom(2, 10);
-        console.log(dotCount);
         const augment = Math.round(this.graphAreaLengthByX / (dotCount - 1));
         let dots = [];
-
         for (let i = 0; i < dotCount; i++) {
             dots.push({'x': augment * i, 'y': this.getRandom(0, this.graphAreaLengthByY)});
         }
         return dots;
     }
 
+    //Генератор псевдослучайных чисел в заданном диапазоне
     getRandom(min, max) {
         min = Math.ceil(min);
         max = Math.floor(max);
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
+    //Генерация массива промежуточных координат для отрисовки анимации перехода
     drawAnimate(callback) {
         let arrayStart = this.dotSet;
         let arrayFinish = this.generateDots();
@@ -106,7 +98,6 @@ class GraphBuilder {
                 arrayStart = this.arrayNormalize(arrayStart, arrayFinish);
             }
         }
-
 
         let start = null;
         const drawFrame = (timestamp) => {
@@ -121,25 +112,26 @@ class GraphBuilder {
                 });
             }
             this.drawPath(arrayCurrent);
-
             if ((timestamp - start) < this.animationTime) {
                 window.requestAnimationFrame(drawFrame);
             } else {
-                callback();
+                if (callback) callback();
             }
         }
         window.requestAnimationFrame(drawFrame);
-
     }
 
+    //Расчёт позиции
     positionCalculate(begin, end, duration, progress) {
         return Math.round(begin + Math.round(((end - begin) / duration) * progress));
     }
 
+    // Приведение более короткого массива к более длинному.
+    // Создаёт пары недостающие пары координат для длинного массива копируя ближайшие (по оси Х) значения короткого.
+    // По этим траекториям происходит разделение либо слияние точек.
     arrayNormalize(arrayA, arrayB) {
         let shortArray;
         let longArray;
-
         if (arrayA.length !== arrayB.length) {
             if (arrayA.length > arrayB.length) {
                 shortArray = arrayB;
@@ -148,113 +140,17 @@ class GraphBuilder {
                 shortArray = arrayA;
                 longArray = arrayB;
             }
-
             let arrayFilled = longArray.map((itemOfBig) => {
                 let differences = shortArray.map((itemOfSmall) => {
                     return Math.abs(itemOfSmall.x - itemOfBig.x);
                 })
                 return shortArray[differences.indexOf(Math.min(...differences))];
             })
-
-            console.log(arrayFilled);
             return arrayFilled;
         } else {
             console.log('Error: array length are equal...');
         }
-
-
     }
-
-    /*
-        drawLoop() {
-            setInterval(() => {
-                let arrayStart = [{"x": 50, "y": 40}, {"x": 90, "y": 60}, {"x": 180, "y": 80}, {"x": 330, "y": 40}]
-                let arrayFinish = [{"x": 50, "y": 40}, {"x": 90, "y": 210}, {"x": 180, "y": 180}, {"x": 330, "y": 40}]
-                let arrayCurrent = [];
-                for (let i = 0; i < arrayStart.length; i++) {
-                    arrayCurrent.push({
-                        'x': this.currentCalculate(arrayStart[i].x, arrayFinish[i].x, this.animationTime, this.animationProgress),
-                        'y': this.zeroY - this.currentCalculate(arrayStart[i].y, arrayFinish[i].y, this.animationTime, this.animationProgress),
-                    })
-                }
-
-                this.display.clearRect(31, 0, 400, 269);
-                this.display.beginPath();
-                arrayCurrent.forEach((item, index) => {
-                    if (index = 0) {
-                        this.display.beginPath();
-                        this.display.moveTo(item.x, item.y);
-                    } else {
-                        this.display.lineTo(item.x, item.y);
-                    }
-                });
-                this.display.stroke();
-
-
-                if (this.animationProgress >= 1000) this.direction = false;
-
-                if (this.animationProgress <= 0) this.direction = true;
-
-                if (this.direction) {
-                    this.animationProgress = this.animationProgress + 1;
-                } else {
-                    this.animationProgress = this.animationProgress - 1;
-                }
-
-            }, 1);
-        }
-
-        drawAnimate() {
-            let arrayStart = [{"x": 50, "y": 40}, {"x": 90, "y": 60}, {"x": 90, "y": 60}, {"x": 330, "y": 40}]
-            let arrayFinish = [{"x": 50, "y": 40}, {"x": 90, "y": 210}, {"x": 180, "y": 230}, {"x": 330, "y": 40}]
-            let start = null;
-            const drawFrame = (timestamp) => {
-                let arrayCurrent = [];
-                for (let i = 0; i < arrayStart.length; i++) {
-                    arrayCurrent.push({
-                        'x': this.currentCalculate(arrayStart[i].x, arrayFinish[i].x, this.animationTime, timestamp - start),
-                        'y': this.zeroY - this.currentCalculate(arrayStart[i].y, arrayFinish[i].y, this.animationTime, timestamp - start),
-                    })
-                }
-
-                if (!start) start = timestamp;
-                this.display.clearRect(31, 0, 400, 269);
-                this.display.beginPath();
-                arrayCurrent.forEach((item, index) => {
-                    if (index === 0) {
-                        this.display.beginPath();
-                        this.display.moveTo(item.x, item.y);
-                    } else {
-                        this.display.lineTo(item.x, item.y);
-                    }
-                });
-                this.display.stroke();
-                if ((timestamp - start) < 1000) window.requestAnimationFrame(drawFrame);
-
-            }
-            window.requestAnimationFrame(drawFrame);
-
-        }
-
-
-        currentCalculate(begin, end, stepCount, currentStep) {
-            return begin + ((end - begin) / stepCount) * currentStep;
-        }
-
-        generateDots(dotCount) {
-            if (!dotCount) dotCount = this.getRandom(2, 10);
-            const augment = Math.round(this.displayWidth - 20 / dotCount);
-
-            let dots = [];
-
-            for (let i = 1; i <= dotCount; i++) {
-                dots.push({'x': augment * i, 'y': this.getRandom(10, yAxisWork)});
-            }
-            return dots;
-        }
-
-
-    */
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -263,20 +159,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const aniGraph = new GraphBuilder(elArea,);
     aniGraph.initField();
-    aniGraph.drawPath();
-    //aniGraph.drawAnimate();
+    //aniGraph.drawPath();
+    aniGraph.drawAnimate();
 
+    //Удаляет обработчик клика с началом перестроения и устанавливает его обратно когда анимация завершается.
     const clickHandler = () => {
-
-
         elArea.removeEventListener('click', clickHandler);
         aniGraph.drawAnimate(() => {
             elArea.addEventListener('click', clickHandler);
         });
-
-
     }
-
 
     elArea.addEventListener('click', clickHandler);
 

@@ -9,6 +9,7 @@
 h1 {
   margin-bottom: 15px;
 }
+
 .container {
   width: 1024px;
   margin: 0  auto;
@@ -18,4 +19,5 @@ h1 {
 
 #canvas {
   border: #31708F solid 2px;
+  margin-bottom: 15px;
 }
